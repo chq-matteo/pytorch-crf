@@ -161,8 +161,8 @@ class CRF(nn.Module):
                 raise ValueError(
                     'the first two dimensions of emissions and mask must match, '
                     f'got {tuple(emissions.shape[:2])} and {tuple(mask.shape)}')
-            no_empty_seq = not self.batch_first and mask[0].all()
-            no_empty_seq_bf = self.batch_first and mask[:, 0].all()
+            no_empty_seq = not self.batch_first and mask[0].bool().all()
+            no_empty_seq_bf = self.batch_first and mask[:, 0].bool().all()
             if not no_empty_seq and not no_empty_seq_bf:
                 raise ValueError('mask of the first timestep must all be on')
 
@@ -176,7 +176,7 @@ class CRF(nn.Module):
         assert emissions.shape[:2] == tags.shape
         assert emissions.size(2) == self.num_tags
         assert mask.shape == tags.shape
-        assert mask[0].all()
+        assert mask[0].bool().all()
 
         seq_length, batch_size = tags.shape
         mask = mask.type_as(emissions)
@@ -197,7 +197,7 @@ class CRF(nn.Module):
 
         # End transition score
         # shape: (batch_size,)
-        seq_ends = mask.long().sum(dim=0) - 1
+        seq_ends = mask.bool().sum(dim=0) - 1
         # shape: (batch_size,)
         last_tags = tags[seq_ends, torch.arange(batch_size)]
         # shape: (batch_size,)
@@ -212,7 +212,7 @@ class CRF(nn.Module):
         assert emissions.dim() == 3 and mask.dim() == 2
         assert emissions.shape[:2] == mask.shape
         assert emissions.size(2) == self.num_tags
-        assert mask[0].all()
+        assert mask[0].bool().all()
 
         seq_length = emissions.size(0)
 
@@ -263,7 +263,7 @@ class CRF(nn.Module):
         assert emissions.dim() == 3 and mask.dim() == 2
         assert emissions.shape[:2] == mask.shape
         assert emissions.size(2) == self.num_tags
-        assert mask[0].all()
+        assert mask[0].bool().all()
 
         seq_length, batch_size = mask.shape
 
@@ -312,7 +312,7 @@ class CRF(nn.Module):
         # Now, compute the best path for each sample
 
         # shape: (batch_size,)
-        seq_ends = mask.long().sum(dim=0) - 1
+        seq_ends = mask.bool().sum(dim=0) - 1
         best_tags_list = []
 
         for idx in range(batch_size):
