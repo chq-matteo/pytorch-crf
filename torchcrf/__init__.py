@@ -199,7 +199,7 @@ class CRF(nn.Module):
 
         # End transition score
         # shape: (batch_size,)
-        seq_ends = mask.bool().sum(dim=0) - 1
+        seq_ends = mask.long().sum(dim=0) - 1
         # shape: (batch_size,)
         last_tags = tags[seq_ends, torch.arange(batch_size)]
         # shape: (batch_size,)
@@ -314,7 +314,7 @@ class CRF(nn.Module):
         # Now, compute the best path for each sample
 
         # shape: (batch_size,)
-        seq_ends = mask.bool().sum(dim=0) - 1
+        seq_ends = mask.long().sum(dim=0) - 1
         best_tags_list = []
 
         for idx in range(batch_size):
