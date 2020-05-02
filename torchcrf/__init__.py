@@ -115,7 +115,7 @@ class CRF(nn.Module):
         return llh.sum() / mask.type_as(emissions).sum()
 
     def decode(self, emissions: torch.Tensor,
-               mask: Optional[torch.ByteTensor] = None) -> List[List[int]]:
+               mask: Optional[torch.ByteTensor] = None, blacklist=None) -> List[List[int]]:
         """Find the most likely tag sequence using Viterbi algorithm.
 
         Args:
@@ -135,8 +135,10 @@ class CRF(nn.Module):
         if self.batch_first:
             emissions = emissions.transpose(0, 1)
             mask = mask.transpose(0, 1)
-
-        return self._viterbi_decode(emissions, mask)
+        end_transitions = self.end_transitions.clone()
+        if blacklist is not None:
+            end_transitions[blacklist] = -10**10
+        return self._viterbi_decode(emissions, mask, end_transitions)
 
     def _validate(
             self,
@@ -257,7 +259,7 @@ class CRF(nn.Module):
         return torch.logsumexp(score, dim=1)
 
     def _viterbi_decode(self, emissions: torch.FloatTensor,
-                        mask: torch.ByteTensor) -> List[List[int]]:
+                        mask: torch.ByteTensor, end_transitions: torch.FloatTensor) -> List[List[int]]:
         # emissions: (seq_length, batch_size, num_tags)
         # mask: (seq_length, batch_size)
         assert emissions.dim() == 3 and mask.dim() == 2
@@ -307,7 +309,7 @@ class CRF(nn.Module):
 
         # End transition score
         # shape: (batch_size, num_tags)
-        score += self.end_transitions
+        score += end_transitions
 
         # Now, compute the best path for each sample
 
